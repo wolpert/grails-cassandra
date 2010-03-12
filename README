@@ -6,7 +6,7 @@ Grails: 1.2.1
 
 
 
-RELEASE INFO
+DISCLAIMER: NOT READY FOR PRIME TIME!
 
 This code is still highly in development. Expect lots of changes. When the 
 code is considered stable, this disclaimer will be removed.
@@ -45,6 +45,29 @@ beans = {
 
 The above configuration will allow for server fail-over to multiple Cassandra
 servers running, and default requests to the 'GeneralKeyspace' named Keyspace.
+
+
+
+EXAMPLES
+
+import java.util.Date
+class CassandraLookupController {
+    def cassandraService
+    def index = {
+        def now = new Date().toString()
+        def old_value = cassandraService.setColumnPathValue("Users","login_date","2",now)
+        def new_value = cassandraService.columnPathValue("Users","login_date","2")
+        def str = "Login date was $old_value and now is $new_value"
+        render(str)
+    }
+}
+
+
+TODO
+Some tasks in progress
+  - Make use of super columns
+  - Simplify default access pattern more
+  - Create CassandraHashMap that can use supercolumns
 
 
 

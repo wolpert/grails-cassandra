@@ -18,10 +18,7 @@ class CassandraService {
 
     def execute(keyspaceName=defaultKeyspace,block){
         CassandraClientPool pool = CassandraClientPoolFactory.INSTANCE.get();
-        //CassandraClient client = pool.borrowClient("localhost", 9160);
         CassandraClient client = pool.borrowClient(servers);
-        // A load balanced version would look like this:
-        // CassandraClient client = pool.borrowClient(new String[] {"cas1:9160", "cas2:9160", "cas3:9160"});
 
         try {
             Keyspace keyspace = client.getKeyspace(keyspaceName)
@@ -36,6 +33,19 @@ class CassandraService {
         return execute{ keyspace ->
             string(keyspace.getColumn(key,cp).getValue())
         }
+    }
+
+    // sets the new value for this column path, returning the old one
+    // if there was one
+    def setColumnPathValue(cf,name,key,value){
+        def cp = new ColumnPath(cf,null,bytes(name))
+        return execute{ keyspace ->
+            def old_value = null
+            try {old_value = string(keyspace.getColumn(key,cp).getValue())} catch(Throwable t) {} // TODO, only catch not found
+            keyspace.insert(key, cp, bytes(value))
+            old_value
+        }
+
     }
 
 }

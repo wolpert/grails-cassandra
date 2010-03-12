@@ -1,0 +1,23 @@
+<plugin name='cassandra' version='0.0.1' grailsVersion='1.2.1 &gt; *'>
+  <author>Ned Wolpert</author>
+  <authorEmail>ned.wolpert@imemories.com</authorEmail>
+  <title>Cassandra access</title>
+  <description>\
+Provides access to Cassandra as a service, simplfying its usage. This is not
+a GORM layer.
+</description>
+  <documentation>http://github.com/wolpert/grails-cassandra</documentation>
+  <resources>
+    <resource>BuildConfig</resource>
+    <resource>DataSource</resource>
+    <resource>UrlMappings</resource>
+    <resource>spring.resources</resource>
+    <resource>codehead.CassandraService</resource>
+  </resources>
+  <dependencies>
+    <resolvers>
+      <resolver type='grailsPlugins' name='grailsPlugins' />
+    </resolvers>
+  </dependencies>
+  <behavior />
+</plugin>
