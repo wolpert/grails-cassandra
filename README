@@ -1,0 +1,54 @@
+License: http://www.opensource.org/licenses/bsd-license.php
+
+Cassandra Version: 0.5.1
+Hector Version: 0.5.0-6
+Grails: 1.2.1
+
+
+
+RELEASE INFO
+
+This code is still highly in development. Expect lots of changes. When the 
+code is considered stable, this disclaimer will be removed.
+
+
+
+ABOUT
+
+This grails plugins provides a service to enable easy access to Cassandra
+from within grails. It is not intended to be a GORM mapping layer.
+
+It specifically wraps the Hector (http://github.com/rantav/hector) API which
+makes it easy to connect to Cassandra without dealing with the thrift layer.
+Hector also provides for connection pooling, etc.
+
+Goals:
+
+Primary goals of this project is to have a service that provides easy access
+to Cassandra. This includes simplify lookup and setting of Cassandra values,
+and optionally hiding 'NotFound' exceptions. (The ruby Cassandra plugin 
+returns an empty hash if a searched for value does not exist. Java plugin
+throws an exception.)
+
+Usage:
+
+By default, this plugin will connect to Cassandra running at localhost:9160
+using the keyspace 'Keyspace1' for all queries. To change this, setup in
+your grails-app/conf/spring/resources.groovy file:
+
+beans = {
+        cassandraService(codehead.CassandraService){
+            servers=["localhost:9160","192.168.2.1:9160"] 
+            defaultKeyspace="GeneralKeyspace"
+        }
+}
+
+The above configuration will allow for server fail-over to multiple Cassandra
+servers running, and default requests to the 'GeneralKeyspace' named Keyspace.
+
+
+
+THANKS
+
+Thanks to iMemories for allowing me to open-source this code.  
+
