@@ -1,15 +1,16 @@
 http://www.opensource.org/licenses/apache2.0.php
 
 Cassandra Version: 0.5.1
-Hector Version: 0.5.0-6
+Hector Version: 0.5.1-8
 Grails: 1.2.1
 
 
 
-DISCLAIMER: NOT READY FOR PRIME TIME!
+DISCLAIMER: ALMOST READY FOR PRIME TIME!
 
-This code is still highly in development. Expect lots of changes. When the 
-code is considered stable, this disclaimer will be removed.
+This codebase is usable, and the API's are fairly stable. However, its still
+in development and bugs are sure to exist, so be careful, and report
+problems to my github location.  http://github.com/wolpert/grails-cassandra
 
 
 
@@ -55,8 +56,12 @@ class CassandraLookupController {
     def cassandraService
     def index = {
         def now = new Date().toString()
-        def old_value = cassandraService.setColumnPathValue("Users","login_date","2",now)
-        def new_value = cassandraService.columnPathValue("Users","login_date","2")
+        def old_value = cassandraService.setColumnValue("Users","2","login_date",now)  //column family, key, col_name, value
+        def new_value = cassandraService.getColumnValue("Users","2","login_date")
+        // Example that uses a superColumnFamily
+        def old_scf_value = cassandraService.setColumnValue("Classes","chemistry","textbook","title","Quantum for Dummies") // column family, key, supercolumn, col_nam, value
+        def new_scf_value = cassandraService.getColumnValue("Classes","chemistry","textbook","title")
+
         def str = "Login date was $old_value and now is $new_value"
         render(str)
     }
@@ -65,9 +70,9 @@ class CassandraLookupController {
 
 TODO
 Some tasks in progress
-  - Make use of super columns
-  - Simplify default access pattern more
-  - Create CassandraHashMap that can use supercolumns
+  - Add in ability to set timestamps
+  - Create CassandraHashMap
+  - Test cases, better instructions.
 
 
 

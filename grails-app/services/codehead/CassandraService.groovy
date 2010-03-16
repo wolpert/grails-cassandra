@@ -11,6 +11,11 @@ import static me.prettyprint.cassandra.utils.StringUtils.string;
 import org.apache.cassandra.service.Column;
 import org.apache.cassandra.service.ColumnPath;
 import org.apache.cassandra.service.NotFoundException;
+import org.apache.cassandra.service.ColumnParent
+import org.apache.cassandra.service.SliceRange
+import org.apache.cassandra.service.SliceRange
+import org.apache.cassandra.service.SlicePredicate
+import org.apache.cassandra.service.ConsistencyLevel
 
 class CassandraService {
 
@@ -21,16 +26,27 @@ class CassandraService {
     def hideNotFoundExceptions=true
 
     /**
-     * Excetues the closure giving it the keyspace as an argument
+     * Executes the block passing in the available client
      */
-    def execute(keyspaceName=defaultKeyspace,block){
+    def acquireClient(block){
+        log.debug("[acquireClient]")
         CassandraClientPool pool = CassandraClientPoolFactory.INSTANCE.get();
         CassandraClient client = pool.borrowClient(servers);
         try {
-            Keyspace keyspace = client.getKeyspace(keyspaceName)
-            return exceptionCatcher(){block(keyspace)} // Return from here? All good
+            return block(client)
         } finally {
-            pool.releaseClient(client);
+            pool.releaseClient(client)
+        }
+    }
+
+    /**
+     * Executes the closure giving it the keyspace as an argument
+     */
+    def execute(keyspaceName=defaultKeyspace,block){
+        log.debug("[execute] $keyspaceName")
+        acquireClient {  client ->
+            Keyspace keyspace = client.getKeyspace(keyspaceName);
+            return block(keyspace)
         }
     }
 
@@ -49,24 +65,52 @@ class CassandraService {
         }
     }
 
-    def columnPathValue(cf,name,key){
-        def cp = new ColumnPath(cf,null,bytes(name))
-        return execute{ keyspace ->
-            string(keyspace.getColumn(key,cp).getValue())
+    /**
+     * This will return the value for a specific column family.
+     * superColumnName==null
+     *   columnFamilyName:{key:{columnName = columnValue}}
+     * superColumnName!=null
+     *   columnFamilyName:{key:{superColumnName:{columnName = columnValue}}}
+     */
+    def getColumnValue(columnFamilyName,key,superColumnName=null,columnName){
+        log.debug("[getColumnValue] $columnFamilyName $key $superColumnName $columnName")
+        def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
+        execute { keyspace ->
+            return exceptionCatcher{string(keyspace.getColumn(key,columnPath).getValue())}
         }
     }
 
-    // sets the new value for this column path, returning the old one
-    // if there was one
-    def setColumnPathValue(cf,name,key,value){
-        def cp = new ColumnPath(cf,null,bytes(name))
-        return execute{ keyspace ->
-            def old_value = null
-            try {old_value = string(keyspace.getColumn(key,cp).getValue())} catch(NotFoundException nfe) {} // Only catch the expected exception
-            keyspace.insert(key, cp, bytes(value)) // I do not think this can cause a NotFoundException...
-            old_value
+    /**
+     * This will set the value for a specific column family.
+     * superColumnName==null
+     *   columnFamilyName:{key:{columnName = columnValue}}
+     * superColumnName!=null
+     *   columnFamilyName:{key:{superColumnName:{columnName = columnValue}}}
+     */
+    def setColumnValue(columnFamilyName,key,superColumnName=null,columnName,value){
+        log.debug("[setColumnValue] $columnFamilyName $key $superColumnName $columnName $value")
+        def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
+        execute { keyspace ->
+            def old_value =  null
+            try {old_value = string(keyspace.getColumn(key,columnPath).getValue())} catch (NotFoundException nfe){;}
+            keyspace.insert(key, columnPath, bytes(value))
+            return old_value
         }
-
     }
+
+    /**
+     * //supercolumnname/columnfamilyname/key?colname=colval&colname=colval
+     */
+    def getColumnPath(columnFamilyName,superColumnName=null,name){
+        log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
+        if(superColumnName!=null){
+            // This feels backwards...
+            return new ColumnPath(columnFamilyName,bytes(superColumnName),bytes(name))
+        } else {
+            return new ColumnPath(columnFamilyName,null,bytes(name))
+        }
+    }
+
+
 
 }
