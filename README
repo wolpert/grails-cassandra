@@ -31,7 +31,18 @@ and optionally hiding 'NotFound' exceptions. (The ruby Cassandra plugin
 returns an empty hash if a searched for value does not exist. Java plugin
 throws an exception.)
 
-Usage:
+INSTALLATION
+
+You can either install via the standard grails technique:
+
+   grails install-plugin cassandra
+
+or download the latest zip from github download section.
+
+USAGE
+
+Once the plugin is installed, grails will inject the Cassandra service
+into any controller or service that defines 'cassandraService' variable.
 
 By default, this plugin will connect to Cassandra running at localhost:9160
 using the keyspace 'Keyspace1' for all queries. To change this, setup in
@@ -46,7 +57,6 @@ beans = {
 
 The above configuration will allow for server fail-over to multiple Cassandra
 servers running, and default requests to the 'GeneralKeyspace' named Keyspace.
-
 
 
 EXAMPLES
@@ -66,6 +76,10 @@ class CassandraLookupController {
         render(str)
     }
 }
+
+Note that you also have access to the Hector objects for connecting to
+Cassandra.  More test cases will be generated to show examples on how to do
+this. Until then, you can lookup how the service uses Hector in the code.
 
 
 TODO
