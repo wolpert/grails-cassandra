@@ -50,7 +50,8 @@ your grails-app/conf/spring/resources.groovy file:
 
 beans = {
         cassandraService(codehead.CassandraService){
-            servers=["localhost:9160","192.168.2.1:9160"] 
+            servers=["localhost:9160","192.168.2.1:9160"] as String[]
+            //servers=["localhost:9160"] // for just one server
             defaultKeyspace="GeneralKeyspace"
         }
 }
