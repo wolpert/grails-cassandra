@@ -33,5 +33,10 @@
 			<type>2</type>
 			<location>/home/wolpert/.grails/1.2.1/projects/cassandra/plugins/tomcat-1.2.1/src/groovy</location>
 		</link>
+		<link>
+			<name>tomcat-1.2.2-src-groovy</name>
+			<type>2</type>
+			<location>/home/wolpert/.grails/1.2.2/projects/cassandra/plugins/tomcat-1.2.2/src/groovy</location>
+		</link>
 	</linkedResources>
 </projectDescription>

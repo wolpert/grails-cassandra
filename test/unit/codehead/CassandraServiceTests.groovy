@@ -1,7 +1,7 @@
 package codehead;
 
 import grails.test.*
-import org.apache.cassandra.service.NotFoundException;
+import org.apache.cassandra.thrift.NotFoundException;
 
 /**
  * mockFor requires a groovy object, where the keyspace I'm mocking is

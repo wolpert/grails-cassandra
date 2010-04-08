@@ -10,15 +10,15 @@ import me.prettyprint.cassandra.service.Keyspace
 import static me.prettyprint.cassandra.utils.StringUtils.bytes;
 import static me.prettyprint.cassandra.utils.StringUtils.string;
 
-import org.apache.cassandra.service.Column;
-import org.apache.cassandra.service.SuperColumn;
-import org.apache.cassandra.service.ColumnPath;
-import org.apache.cassandra.service.NotFoundException;
-import org.apache.cassandra.service.ColumnParent
-import org.apache.cassandra.service.SliceRange
-import org.apache.cassandra.service.SliceRange
-import org.apache.cassandra.service.SlicePredicate
-import org.apache.cassandra.service.ConsistencyLevel
+import org.apache.cassandra.thrift.Column;
+import org.apache.cassandra.thrift.SuperColumn;
+import org.apache.cassandra.thrift.ColumnPath;
+import org.apache.cassandra.thrift.NotFoundException;
+import org.apache.cassandra.thrift.ColumnParent
+import org.apache.cassandra.thrift.SliceRange
+import org.apache.cassandra.thrift.SliceRange
+import org.apache.cassandra.thrift.SlicePredicate
+import org.apache.cassandra.thrift.ConsistencyLevel
 
 class CassandraService {
 	
@@ -176,12 +176,12 @@ class CassandraService {
 	 */
 	def getColumnPath(columnFamilyName,superColumnName=null,name){
 		log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
+		ColumnPath cp = new ColumnPath(columnFamilyName)
+		cp.setColumn(bytes(name))
 		if(superColumnName!=null){
-			// This feels backwards...
-			return new ColumnPath(columnFamilyName,bytes(superColumnName),bytes(name))
-		} else {
-			return new ColumnPath(columnFamilyName,null,bytes(name))
+			cp.setSuper_column(bytes(superColumnName))
 		}
+		return cp
 	}
 	
 	
