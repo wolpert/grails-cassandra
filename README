@@ -5,15 +5,6 @@ Hector Version: 0.6.0-10
 Grails: 1.2.2
 
 
-
-DISCLAIMER: ALMOST READY FOR PRIME TIME!
-
-This codebase is usable, and the API's are fairly stable. However, its still
-in development and bugs are sure to exist, so be careful, and report
-problems to my github location.  http://github.com/wolpert/grails-cassandra
-
-
-
 ABOUT
 
 This grails plugins provides a service to enable easy access to Cassandra
