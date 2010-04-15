@@ -32,7 +32,7 @@ class CassandraService {
 	 * Executes the block passing in the available client
 	 */
 	def acquireClient(block){
-		log.debug("[acquireClient]")
+		//if(null!=log) log.debug("[acquireClient]")
 		CassandraClientPool pool = CassandraClientPoolFactory.INSTANCE.get();
 		CassandraClient client = pool.borrowClient(servers);
 		try {
@@ -46,7 +46,7 @@ class CassandraService {
 	 * Executes the closure giving it the keyspace as an argument
 	 */
 	def execute(keyspaceName=defaultKeyspace,block){
-		log.debug("[execute] $keyspaceName")
+		//if(null!=log) log.debug("[execute] $keyspaceName")
 		acquireClient {  client ->
 			Keyspace keyspace = client.getKeyspace(keyspaceName);
 			return block(keyspace)
@@ -104,7 +104,7 @@ class CassandraService {
 	 * @return
 	 */
 	def getColumnValue(columnFamilyName,key,superColumnName=null,columnName){
-		log.debug("[getColumnValue] $columnFamilyName $key $superColumnName $columnName")
+		//if(null!=log) log.debug("[getColumnValue] $columnFamilyName $key $superColumnName $columnName")
 		def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
 		execute { keyspace ->
 			return exceptionCatcher{
@@ -128,7 +128,7 @@ class CassandraService {
 	 * @return
 	 */
 	def setColumnValue(columnFamilyName,key,superColumnName=null,columnName,value){
-		log.debug("[setColumnValue] $columnFamilyName $key $superColumnName $columnName $value")
+		//if(null!=log) log.debug("[setColumnValue] $columnFamilyName $key $superColumnName $columnName $value")
 		def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
 		execute { keyspace ->
 			def old_value =  null
@@ -150,7 +150,7 @@ class CassandraService {
 	 * @return
 	 */
 	def setColumnValues(columnFamilyName,key, superColumnName=null,values){
-		log.debug("[setColumnValues]  $columnFamilyName $key $superColumnName $values")
+		//if(null!=log) log.debug("[setColumnValues]  $columnFamilyName $key $superColumnName $values")
 		ArrayList<Column> list = new ArrayList<Column>(values.size()); // columnName,value in values
 		values.each{
 			list.add(new Column(bytes(it.key.toString()),bytes(it.value.toString()),System.currentTimeMillis()));
@@ -175,7 +175,7 @@ class CassandraService {
 	 * //supercolumnname/columnfamilyname/key?colname=colval&colname=colval
 	 */
 	def getColumnPath(columnFamilyName,superColumnName=null,name){
-		log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
+		//if(null!=log) log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
 		ColumnPath cp = new ColumnPath(columnFamilyName)
 		cp.setColumn(bytes(name))
 		if(superColumnName!=null){
