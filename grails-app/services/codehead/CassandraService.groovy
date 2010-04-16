@@ -11,11 +11,11 @@ import static me.prettyprint.cassandra.utils.StringUtils.bytes;
 import static me.prettyprint.cassandra.utils.StringUtils.string;
 
 import org.apache.cassandra.thrift.Column;
+import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 import org.apache.cassandra.thrift.SuperColumn;
 import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.ColumnParent
-import org.apache.cassandra.thrift.SliceRange
 import org.apache.cassandra.thrift.SliceRange
 import org.apache.cassandra.thrift.SlicePredicate
 import org.apache.cassandra.thrift.ConsistencyLevel
@@ -114,6 +114,41 @@ class CassandraService {
 	}
 	
 	/**
+	 * Returns a map where the key is the super-column, and the value is the sub-column name/value pairs
+	 * @param columnFamilyName
+	 * @param key
+	 * @return
+	 */
+	def getRow(columnFamilyName,key){
+		SliceRange sr = new SliceRange(new byte[0], new byte[0], false, 1000000); //TODO, fix this to get a real count, somehow
+        SlicePredicate predicate = new SlicePredicate();
+        predicate.setSlice_range(sr)
+
+		acquireClient { client ->
+			List<ColumnOrSuperColumn> columns = client.getCassandra().get_slice(defaultKeyspace, key, 
+					new ColumnParent(columnFamilyName),
+					predicate, 
+					ConsistencyLevel.ONE);
+			int size = columns.size();
+			def result = new HashMap()
+	        for (ColumnOrSuperColumn cosc : columns) {
+	            if (cosc.isSetSuper_column()) {
+	                SuperColumn superColumn = cosc.super_column;
+	                def superColumnName = new String(superColumn.name,"UTF-8") 
+	                println("scn: $superColumnName")
+	                result[superColumnName] = new HashMap()
+	                for (Column col : superColumn.getColumns()){
+	                	result[superColumnName][new String(col.name,"UTF-8")] =  new String(col.value,"UTF-8")}
+	            } else {
+	                Column col = cosc.column;
+	                result[new String(col.name,"UTF-8")] =  new String(col.value,"UTF-8")
+	            }
+	        } // for	
+	        return result
+		}
+	}
+	
+	/**
 	 * This will set the value for a specific column family.
 	 * superColumnName==null
 	 *   columnFamilyName:{key:{columnName = columnValue}}
@@ -177,7 +212,9 @@ class CassandraService {
 	def getColumnPath(columnFamilyName,superColumnName=null,name){
 		//if(null!=log) log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
 		ColumnPath cp = new ColumnPath(columnFamilyName)
-		cp.setColumn(bytes(name))
+		if(name!=null){
+			cp.setColumn(bytes(name))
+		}
 		if(superColumnName!=null){
 			cp.setSuper_column(bytes(superColumnName))
 		}
