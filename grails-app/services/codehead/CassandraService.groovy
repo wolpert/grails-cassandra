@@ -86,7 +86,6 @@ class CassandraService {
 			}
 			return result
 		}
-		
 	}
 	
 	
@@ -114,6 +113,20 @@ class CassandraService {
 	}
 	
 	/**
+	 * Removes an entry from the system. 
+	 * @param columnFamilyName Required to specify the columnFamily to remove from
+	 * @param key Require to specify the key to remove.
+	 * @param superColumnName optional if there is a superColumn 
+	 * @param columnName optional. Use this if you only want to remove one value
+	 */
+	def removeValue(columnFamilyName, key, superColumnName=null, columnName=null){
+		def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
+		execute {keyspace ->
+			keyspace.remove(key,columnPath)
+		}
+	}
+	
+	/**
 	 * Returns a map where the key is the super-column, and the value is the sub-column name/value pairs
 	 * @param columnFamilyName
 	 * @param key
@@ -135,7 +148,6 @@ class CassandraService {
 	            if (cosc.isSetSuper_column()) {
 	                SuperColumn superColumn = cosc.super_column;
 	                def superColumnName = new String(superColumn.name,"UTF-8") 
-	                println("scn: $superColumnName")
 	                result[superColumnName] = new HashMap()
 	                for (Column col : superColumn.getColumns()){
 	                	result[superColumnName][new String(col.name,"UTF-8")] =  new String(col.value,"UTF-8")}
