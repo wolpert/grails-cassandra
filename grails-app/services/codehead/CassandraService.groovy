@@ -54,6 +54,18 @@ class CassandraService {
 	}
 	
 	/**
+	 * If the object is not already a byte[], it will convert it to one.
+	 * @param obj
+	 * @return
+	 */
+	def bytesConvert(obj){
+		if(!(obj instanceof byte[])){
+			obj = bytes(obj.toString())
+		}
+		obj
+	}
+	
+	/**
 	 * Calls the closure, hiding any NotFoundExceptions only if hideNotFoundExceptions=true
 	 */
 	def exceptionCatcher(block){
@@ -78,7 +90,7 @@ class CassandraService {
 	 * @return number of columns available.
 	 */
 	def getColumnCount(columnFamilyName,key,superColumnName=null){
-		def columnParent = new ColumnParent(columnFamilyName, (superColumnName==null ? null : bytes(superColumnName)))
+		def columnParent = new ColumnParent(columnFamilyName, (superColumnName==null ? null : bytesConvert(superColumnName)))
 		execute { keyspace ->
 			def result = exceptionCatcher{keyspace.getCount(key,columnParent)}
 			if(result==null){
@@ -182,7 +194,7 @@ class CassandraService {
 			try {old_value = string(keyspace.getColumn(key,columnPath).getValue())
 			} catch (NotFoundException nfe){;
 			}
-			keyspace.insert(key, columnPath, bytes(value))
+			keyspace.insert(key, columnPath, bytesConvert(value))
 			return old_value
 		}
 	}
@@ -200,7 +212,7 @@ class CassandraService {
 		//if(null!=log) log.debug("[setColumnValues]  $columnFamilyName $key $superColumnName $values")
 		ArrayList<Column> list = new ArrayList<Column>(values.size()); // columnName,value in values
 		values.each{
-			list.add(new Column(bytes(it.key.toString()),bytes(it.value.toString()),System.currentTimeMillis()));
+			list.add(new Column(bytesConvert(it.key),bytesConvert(it.value),System.currentTimeMillis()));
 		}
 		// if no superColumnName
 		if (null==superColumnName){
@@ -208,7 +220,7 @@ class CassandraService {
 			cfmap.put(columnFamilyName,list)
 			execute {keyspace -> keyspace.batchInsert(key,cfmap,null)}
 		} else {
-			SuperColumn sc = new SuperColumn(bytes(superColumnName),list)
+			SuperColumn sc = new SuperColumn(bytesConvert(superColumnName),list)
 			HashMap<String, List<SuperColumn>> cfmap = new HashMap<String, List<SuperColumn>>(1);
 			List<SuperColumn> scList = new ArrayList<SuperColumn>(1)
 			scList.add(sc)
@@ -225,10 +237,10 @@ class CassandraService {
 		//if(null!=log) log.debug("[getColumnPath]: $columnFamilyName $superColumnName $name")
 		ColumnPath cp = new ColumnPath(columnFamilyName)
 		if(name!=null){
-			cp.setColumn(bytes(name))
+			cp.setColumn(bytesConvert(name))
 		}
 		if(superColumnName!=null){
-			cp.setSuper_column(bytes(superColumnName))
+			cp.setSuper_column(bytesConvert(superColumnName))
 		}
 		return cp
 	}

@@ -4,6 +4,14 @@ Cassandra Version: 0.6.0 rc1
 Hector Version: 0.6.0-10 (+)
 Grails: 1.2.2
 
+RECENT CHANGES:
+  0.5.0:
+  Please note that now, values stored in cassandra are NOT converted to 
+  string then byte[] if they are already a byte[]. This is a significant
+  change that WILL impact data already stored. (In reality, the way I was
+  doing it before was wrong.)  Expect another change soon on deciding what
+  to do on values coming back. (Right now I convert them to strings. I will
+  make that optional.)
 
 ABOUT
 

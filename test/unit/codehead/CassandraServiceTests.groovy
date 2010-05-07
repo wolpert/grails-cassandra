@@ -32,6 +32,25 @@ class CassandraServiceTests extends GrailsUnitTestCase {
         assertEquals("mock keyspace", str)
     }
 
+    void testBytesArrayConvertOnBytesArray(){
+    	cassandraService = new CassandraService()
+    	def obj = new byte[2];
+    	obj[0]=5
+    	obj[1]=6
+    	def result = cassandraService.bytesConvert(obj)
+    	assertEquals obj, result
+    	assertEquals obj[0], result[0]
+    	assertEquals obj[1], result[1]
+    }
+    
+    void testBytesArrayConvertOnString(){
+    	cassandraService = new CassandraService()
+    	def obj = "this is a string"
+    	def result = cassandraService.bytesConvert(obj)
+    	assertEquals(byte[].class,result.class)
+    	assertEquals(obj,new String(result))
+    }
+    
     void testExceptionCatcherWithNotFoundException(){
         def mockKeyspaceImpl = mockFor(MockKeyspace)
         mockKeyspaceImpl.demand.getColumn(1..1){arg1, arg2 -> throw new NotFoundException()}
