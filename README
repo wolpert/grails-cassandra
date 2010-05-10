@@ -1,7 +1,7 @@
 http://www.opensource.org/licenses/apache2.0.php
 
-Cassandra Version: 0.6.0 rc1
-Hector Version: 0.6.0-10 (+)
+Cassandra Version: 0.6.0 
+Hector Version: 0.6.0-12 
 Grails: 1.2.2
 
 RECENT CHANGES:
