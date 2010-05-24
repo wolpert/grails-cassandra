@@ -27,6 +27,7 @@ class CassandraService {
 	def servers=["localhost:9160"]
 	def defaultKeyspace="Keyspace1"
 	def hideNotFoundExceptions=true
+	def convertOnGetDefault = true
 	
 	/**
 	 * Executes the block passing in the available client
@@ -40,6 +41,14 @@ class CassandraService {
 		} finally {
 			pool.releaseClient(client)
 		}
+	}
+	
+	/**
+	 * A way get the details of the column families in this keyspace
+	 * @return
+	 */
+	def columnFamilyDetails(keyspaceName=defaultKeyspace){
+		return acquireClient{it.getCassandra().describe_keyspace(keyspaceName)}
 	}
 	
 	/**
@@ -142,9 +151,10 @@ class CassandraService {
 	 * Returns a map where the key is the super-column, and the value is the sub-column name/value pairs
 	 * @param columnFamilyName
 	 * @param key
+	 * @param covert Set this to false if you want 'bytes' back.
 	 * @return
 	 */
-	def getRow(columnFamilyName,key){
+	def getRow(columnFamilyName,key,convert=convertOnGetDefault){
 		SliceRange sr = new SliceRange(new byte[0], new byte[0], false, 1000000); //TODO, fix this to get a real count, somehow
         SlicePredicate predicate = new SlicePredicate();
         predicate.setSlice_range(sr)
@@ -159,13 +169,13 @@ class CassandraService {
 	        for (ColumnOrSuperColumn cosc : columns) {
 	            if (cosc.isSetSuper_column()) {
 	                SuperColumn superColumn = cosc.super_column;
-	                def superColumnName = new String(superColumn.name,"UTF-8") 
+	                def superColumnName = (convert ? new String(superColumn.name,"UTF-8") :  superColumn.name)
 	                result[superColumnName] = new HashMap()
 	                for (Column col : superColumn.getColumns()){
-	                	result[superColumnName][new String(col.name,"UTF-8")] =  new String(col.value,"UTF-8")}
+	                	result[superColumnName][( convert ? new String(col.name,"UTF-8") : col.name)] =  (convert ? new String(col.value,"UTF-8") : col.value)}
 	            } else {
 	                Column col = cosc.column;
-	                result[new String(col.name,"UTF-8")] =  new String(col.value,"UTF-8")
+	                result[(convert ? new String(col.name,"UTF-8") : col.name) ] =  ( convert ? new String(col.value,"UTF-8") : col.value)
 	            }
 	        } // for	
 	        return result
