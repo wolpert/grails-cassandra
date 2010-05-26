@@ -1,6 +1,9 @@
 package codehead;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.TimeZone;
+import java.util.UUID;
 
 import me.prettyprint.cassandra.service.CassandraClientPool
 import me.prettyprint.cassandra.service.CassandraClientPoolFactory
@@ -10,8 +13,10 @@ import me.prettyprint.cassandra.service.Keyspace
 import static me.prettyprint.cassandra.utils.StringUtils.bytes;
 import static me.prettyprint.cassandra.utils.StringUtils.string;
 
+import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
+import org.apache.cassandra.thrift.KeyRange;
 import org.apache.cassandra.thrift.SuperColumn;
 import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.cassandra.thrift.NotFoundException;
@@ -28,7 +33,8 @@ class CassandraService {
 	def defaultKeyspace="Keyspace1"
 	def hideNotFoundExceptions=true
 	def convertOnGetDefault = true
-	
+	def keyspaceDetails = [:]
+	                       
 	/**
 	 * Executes the block passing in the available client
 	 */
@@ -44,11 +50,38 @@ class CassandraService {
 	}
 	
 	/**
-	 * A way get the details of the column families in this keyspace
+	 * A way get the details of the column families in this keyspace. Note that the data is also stored in
+	 * the keyspaceDetails properties, so if you need to flush the cache, set that to null 
 	 * @return
 	 */
 	def columnFamilyDetails(keyspaceName=defaultKeyspace){
-		return acquireClient{it.getCassandra().describe_keyspace(keyspaceName)}
+		if (null==keyspaceDetails[keyspaceName]) {
+			keyspaceDetails[keyspaceName] = acquireClient{it.getCassandra().describe_keyspace(keyspaceName)}
+		}
+		return keyspaceDetails[keyspaceName]
+	}
+	
+	/**
+	 * Returns a list of keys for the column family. They will not be ordered
+	 * if you are not using an OPP sort. You can page through the list by 
+	 * starting with emptystrings for startKey and endKey, and using the last
+	 * key found as the 'startKey' in the next list.
+	 * @param columnFamily
+	 * @return
+	 */
+	def keySearch(columnFamily,count=100,startKey="",endKey=""){
+		execute { keyspace ->
+			ColumnParent cp = new ColumnParent(columnFamily)
+			SliceRange sr = new SliceRange(new byte[0], new byte[0], true, 0) //we don't want any columns, just keys 
+			SlicePredicate sp = new SlicePredicate()
+			sp.setSlice_range(sr)
+			KeyRange kr = new KeyRange()
+			kr.setCount(count)
+			kr.setStart_key(startKey)
+			kr.setEnd_key(endKey)
+			def map = keyspace.getRangeSlices(cp,sp,kr)
+			return map.keySet()
+		}
 	}
 	
 	/**
@@ -155,6 +188,8 @@ class CassandraService {
 	 * @return
 	 */
 	def getRow(columnFamilyName,key,convert=convertOnGetDefault){
+		def rowDetails = columnFamilyDetails()[columnFamilyName]
+		
 		SliceRange sr = new SliceRange(new byte[0], new byte[0], false, 1000000); //TODO, fix this to get a real count, somehow
         SlicePredicate predicate = new SlicePredicate();
         predicate.setSlice_range(sr)
@@ -169,17 +204,36 @@ class CassandraService {
 	        for (ColumnOrSuperColumn cosc : columns) {
 	            if (cosc.isSetSuper_column()) {
 	                SuperColumn superColumn = cosc.super_column;
-	                def superColumnName = (convert ? new String(superColumn.name,"UTF-8") :  superColumn.name)
+	                def superColumnName = (convert ? convertValue(superColumn.name,rowDetails["CompareWith"]) :  superColumn.name)
 	                result[superColumnName] = new HashMap()
 	                for (Column col : superColumn.getColumns()){
-	                	result[superColumnName][( convert ? new String(col.name,"UTF-8") : col.name)] =  (convert ? new String(col.value,"UTF-8") : col.value)}
+	                	result[superColumnName][( convert ? convertValue(col.name,rowDetails["CompareSubcolumnsWith"]) : col.name)] =  (convert ? convertValue(col.value) : col.value)}
 	            } else {
 	                Column col = cosc.column;
-	                result[(convert ? new String(col.name,"UTF-8") : col.name) ] =  ( convert ? new String(col.value,"UTF-8") : col.value)
+	                result[(convert ? convertValue(col.name,rowDetails["CompareWith"]) : col.name) ] =  ( convert ? convertValue(col.value) : col.value)
 	            }
 	        } // for	
 	        return result
 		}
+	}
+		
+	def convertValue(value,type=null){
+		def result
+		if(type=="org.apache.cassandra.db.marshal.TimeUUIDType"){
+	        long msb = 0;
+	        long lsb = 0;
+	        for (int i=0; i<8; i++)
+	            msb = (msb << 8) | (value[i] & 0xff);
+	        for (int i=8; i<16; i++)
+	            lsb = (lsb << 8) | (value[i] & 0xff);
+	        long mostSigBits = msb;
+	        long leastSigBits = lsb;
+	        def uuid = new UUID(msb, lsb)
+	        result =  uuid.toString()
+		} else {
+			result = new String(value,"UTF-8")
+		}
+		return result
 	}
 	
 	/**
