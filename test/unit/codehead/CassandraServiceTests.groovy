@@ -1,4 +1,5 @@
 package codehead;
+import java.nio.ByteBuffer;
 
 import grails.test.*
 import org.apache.cassandra.thrift.NotFoundException;
@@ -30,6 +31,22 @@ class CassandraServiceTests extends GrailsUnitTestCase {
         // run test
         def str = cassandraService.execute{keyspace ->keyspace.getName()}
         assertEquals("mock keyspace", str)
+    }
+    
+    void testByteConvertWithLong(){
+    	long value = 87667382432456
+    	cassandraService = new CassandraService()
+    	byte[] ba = cassandraService.bytesConvert(value)
+    	long result = ByteBuffer.wrap(ba).getLong();
+    	assertEquals(value,result)
+    }
+    
+    void testByteConvertWithLongObject(){
+    	Long value = new Long(87667382432456)
+    	cassandraService = new CassandraService()
+    	byte[] ba = cassandraService.bytesConvert(value)
+    	long result = ByteBuffer.wrap(ba).getLong();
+    	assertEquals(value,result)
     }
 
     void testBytesArrayConvertOnBytesArray(){

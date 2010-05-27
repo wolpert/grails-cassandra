@@ -1,5 +1,6 @@
 package codehead;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -101,7 +102,9 @@ class CassandraService {
 	 * @return
 	 */
 	def bytesConvert(obj){
-		if(!(obj instanceof byte[])){
+		if (obj instanceof Long){
+			obj = ByteBuffer.allocate(8).putLong(obj).array()
+		} else if(!(obj instanceof byte[])){
 			obj = bytes(obj.toString())
 		}
 		obj
@@ -230,6 +233,8 @@ class CassandraService {
 	        long leastSigBits = lsb;
 	        def uuid = new UUID(msb, lsb)
 	        result =  uuid.toString()
+		} else if (type == "org.apache.cassandra.db.marshal.LongType"){
+			result = ByteBuffer.wrap(bytes).getLong()
 		} else {
 			result = new String(value,"UTF-8")
 		}
