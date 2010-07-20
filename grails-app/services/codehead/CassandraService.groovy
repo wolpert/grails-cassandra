@@ -3,6 +3,7 @@ package codehead;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -203,12 +204,12 @@ class CassandraService {
 					predicate, 
 					ConsistencyLevel.ONE);
 			int size = columns.size();
-			def result = new HashMap()
+			def result = new LinkedHashMap()
 	        for (ColumnOrSuperColumn cosc : columns) {
 	            if (cosc.isSetSuper_column()) {
 	                SuperColumn superColumn = cosc.super_column;
 	                def superColumnName = (convert ? convertValue(superColumn.name,rowDetails["CompareWith"]) :  superColumn.name)
-	                result[superColumnName] = new HashMap()
+	                result[superColumnName] = new LinkedHashMap()
 	                for (Column col : superColumn.getColumns()){
 	                	result[superColumnName][( convert ? convertValue(col.name,rowDetails["CompareSubcolumnsWith"]) : col.name)] =  (convert ? convertValue(col.value) : col.value)}
 	            } else {
@@ -285,12 +286,12 @@ class CassandraService {
 		}
 		// if no superColumnName
 		if (null==superColumnName){
-			HashMap<String, List<Column>> cfmap = new HashMap<String, List<Column>>(values.size());
+			LinkedHashMap<String, List<Column>> cfmap = new LinkedHashMap<String, List<Column>>(values.size());
 			cfmap.put(columnFamilyName,list)
 			execute {keyspace -> keyspace.batchInsert(key,cfmap,null)}
 		} else {
 			SuperColumn sc = new SuperColumn(bytesConvert(superColumnName),list)
-			HashMap<String, List<SuperColumn>> cfmap = new HashMap<String, List<SuperColumn>>(1);
+			LinkedHashMap<String, List<SuperColumn>> cfmap = new LinkedHashMap<String, List<SuperColumn>>(1);
 			List<SuperColumn> scList = new ArrayList<SuperColumn>(1)
 			scList.add(sc)
 			cfmap.put(columnFamilyName,scList)
