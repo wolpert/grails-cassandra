@@ -160,12 +160,19 @@ class CassandraService {
 	 * @param columnName
 	 * @return
 	 */
-	def getColumnValue(columnFamilyName,key,superColumnName=null,columnName){
+	def getColumnValue(columnFamilyName,key,superColumnName=null,columnName,convert=convertOnGetDefault){
 		//if(null!=log) log.debug("[getColumnValue] $columnFamilyName $key $superColumnName $columnName")
 		def columnPath = getColumnPath(columnFamilyName,superColumnName,columnName)
 		execute { keyspace ->
 			return exceptionCatcher{
-				string(keyspace.getColumn(key,columnPath).getValue())
+				def value = keyspace.getColumn(key,columnPath).getValue()
+				if (value!=null){
+					def rowDetails = columnFamilyDetails()[columnFamilyName]
+					value = (convert ?    
+						convertValue(value,(superColumnName == null ? rowDetails["CompareWith"] : rowDetails["CompareWith"]))   :     
+						value)
+				}
+				value
 			}
 		}
 	}
