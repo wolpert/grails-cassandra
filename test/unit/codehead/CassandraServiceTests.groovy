@@ -2,14 +2,14 @@ package codehead;
 import java.nio.ByteBuffer;
 
 import grails.test.*
-import org.apache.cassandra.thrift.NotFoundException;
+import me.prettyprint.hector.api.beans.HColumn;
+import me.prettyprint.hector.api.factory.HFactory;
+import me.prettyprint.hector.api.mutation.MutationResult;
+import me.prettyprint.hector.api.mutation.Mutator;
+import me.prettyprint.hector.api.query.ColumnQuery;
+import me.prettyprint.hector.api.query.QueryResult;
 
-/**
- * mockFor requires a groovy object, where the keyspace I'm mocking is
- * a java one. So this class is just a holder.
- */
-class MockKeyspace {
-}
+import org.apache.cassandra.thrift.NotFoundException;
 
 class CassandraServiceTests extends GrailsUnitTestCase {
 
@@ -17,87 +17,77 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 
     protected void setUp() {
         super.setUp()
+		mockLogging(CassandraService,true)
+		cassandraService = new CassandraService()
     }
 
     protected void tearDown() {
         super.tearDown()
     }
+	
+	void testExceptionBlocker(){
+		def result = cassandraService.exceptionCatcher {
+			throw new NotFoundException()
+		}
+		assertNull(result) // and if you got not error, its all good.
+	}
+	
+	/**
+	 * The standard hector test, before the service refactoring...
+	 */
+	void testSetGetDeleteOldStyle(){
+		
+		String cf = "Standard1"
+		String method = "testSetGetDeleteOldStyle"
+		String key = "${method}_Key"
+		String name = "${method}_Name"
+		String value = "${method}_Value"
+		
+		Mutator<String> m = HFactory.createMutator(cassandraService.keyspace(),cassandraService.serializer(String.class));
+		MutationResult mr = m.insert(key, cf, HFactory.createColumn(name, value, cassandraService.serializer(String.class), cassandraService.serializer(String.class)));
+		
+		ColumnQuery<String, String, String> q = HFactory.createColumnQuery(cassandraService.keyspace(), cassandraService.serializer(String.class), cassandraService.serializer(String.class), cassandraService.serializer(String.class))
+		q.setName(name).setColumnFamily(cf)
+		QueryResult<HColumn<String, String>> r = q.setKey(key).execute();
+		assertNotNull(r);
 
-    void testMock() {
-        def mockKeyspaceImpl = mockFor(MockKeyspace)
-        mockKeyspaceImpl.demand.getName(1..1){ -> return "mock keyspace"}
-        def cassandraService = getCassandraService(mockKeyspaceImpl.createMock())
+		HColumn<String, String> c = r.get();
+		assertNotNull(c);
+		String foundvalue = c.getValue();
+		assertEquals(value, foundvalue);
+		String foundname = c.getName();
+		assertEquals(name, foundname);
+		assertEquals(q, r.getQuery());
+		
+		m = HFactory.createMutator(cassandraService.keyspace(), cassandraService.serializer(String.class));
+		MutationResult mr2 = m.delete(key, cf, name, cassandraService.serializer(String.class));
+		
+		// get already removed value
+		ColumnQuery<String, String, String> q2 = HFactory.createColumnQuery(cassandraService.keyspace(), cassandraService.serializer(String.class), cassandraService.serializer(String.class), cassandraService.serializer(String.class));
+		q2.setName(name).setColumnFamily(cf);
+		QueryResult<HColumn<String, String>> r2 = q2.setKey(key).execute();
+		assertNotNull(r2);
+		assertNull("Value should have been deleted", r2.get())
+	}
+	/**
+	 * The standard hector test, before the service refactoring...
+	 */
+	void testSetGetDeleteGroovyStyle(){
+		
+		String cf = "Standard1"
+		String method = "testSetGetDeleteGroovyStyle"
+		String key = "${method}_Key"
+		String name = "${method}_Name"
+		String value = "${method}_Value"
+		
+		cassandraService.setValue(key,cf,name,value)
+		
+		def result = cassandraService.getValue(key,cf,name,String.class)
+		assertNotNull(result);
+		assertEquals(value,result)
 
-        // run test
-        def str = cassandraService.execute{keyspace ->keyspace.getName()}
-        assertEquals("mock keyspace", str)
-    }
-    
-    void testByteConvertWithLong(){
-    	long value = 87667382432456
-    	cassandraService = new CassandraService()
-    	byte[] ba = cassandraService.bytesConvert(value)
-    	long result = ByteBuffer.wrap(ba).getLong();
-    	assertEquals(value,result)
-    }
-    
-    void testByteConvertWithLongObject(){
-    	Long value = new Long(87667382432456)
-    	cassandraService = new CassandraService()
-    	byte[] ba = cassandraService.bytesConvert(value)
-    	long result = ByteBuffer.wrap(ba).getLong();
-    	assertEquals(value,result)
-    }
-
-    void testBytesArrayConvertOnBytesArray(){
-    	cassandraService = new CassandraService()
-    	def obj = new byte[2];
-    	obj[0]=5
-    	obj[1]=6
-    	def result = cassandraService.bytesConvert(obj)
-    	assertEquals obj, result
-    	assertEquals obj[0], result[0]
-    	assertEquals obj[1], result[1]
-    }
-    
-    void testBytesArrayConvertOnString(){
-    	cassandraService = new CassandraService()
-    	def obj = "this is a string"
-    	def result = cassandraService.bytesConvert(obj)
-    	assertEquals(byte[].class,result.class)
-    	assertEquals(obj,new String(result))
-    }
-    
-    void testExceptionCatcherWithNotFoundException(){
-        def mockKeyspaceImpl = mockFor(MockKeyspace)
-        mockKeyspaceImpl.demand.getColumn(1..1){arg1, arg2 -> throw new NotFoundException()}
-        def cassandraService = getCassandraService(mockKeyspaceImpl.createMock())
-        cassandraService.hideNotFoundExceptions=true
-        assertNull cassandraService.getColumnValue('colFamName','key','columnName')
-    }
-
-    void testExceptionCatcherWithRealException(){
-        def mockKeyspaceImpl = mockFor(MockKeyspace)
-        mockKeyspaceImpl.demand.getColumn(1..1){arg1, arg2 -> throw new Exception()}
-        def cassandraService = getCassandraService(mockKeyspaceImpl.createMock())
-        cassandraService.hideNotFoundExceptions=true
-        shouldFail{
-            cassandraService.getColumnValue('colFamName','key','columnName')
-        }
-    }
-
-    /**
-     * Returns a cassandra service that uess the keyspace for its execute
-     */
-    def getCassandraService(keyspace){
-        cassandraService = new CassandraService()
-        mockLogging(CassandraService)
-        def emc = new ExpandoMetaClass(CassandraService.class, false)
-        emc.execute = { it(keyspace)  }
-
-        emc.initialize()
-        cassandraService.metaClass = emc
-        return cassandraService
-    }
+		cassandraService.deleteValue(key,cf,name)
+		assertNull("Value should have been deleted", cassandraService.getValue(key,cf,name,String.class))
+	}
 
 }

@@ -1,28 +1,15 @@
 http://www.opensource.org/licenses/apache2.0.php
 
-Cassandra Version: 0.6.0 
-Hector Version: 0.6.0-14 
-Grails: 1.2.2
+Cassandra Version: 0.7.0 
+Hector Version: 0.7.0-19_10212010
+Grails: 1.2.2 or higher
 
-NOTE ABOUT CASSANDRA 0.7:
 
-  The upcoming change to cassandra 0.7.0 will impact the grails plugin big 
-  time. Specifically, the plugin wraps hector which will have lots of changes
-  too.  I'm going to try to make it as backwards compatiable as possible, 
-  but I'd rather use the features of cassandra and hector have added or changed
-  when possible.  We will be compatiable to grails 1.2.2 at least. I will also
-  be checking for compatibility against grails 1.3.5.
+NOTE:
+This is INCOMPATABLE with cassandra 0.6 or earlier. It will also be incompatiable
+with earlier versions of this own plugin. You'll have to re-do the api calls
+when upgrading to this version of grails-cassandra. 
 
-  Stay tune!
-
-RECENT CHANGES:
-  0.5.0:
-  Please note that now, values stored in cassandra are NOT converted to 
-  string then byte[] if they are already a byte[]. This is a significant
-  change that WILL impact data already stored. (In reality, the way I was
-  doing it before was wrong.)  Expect another change soon on deciding what
-  to do on values coming back. (Right now I convert them to strings. I will
-  make that optional.)
 
 ABOUT
 
@@ -31,7 +18,8 @@ from within grails. It is not intended to be a GORM mapping layer.
 
 It specifically wraps the Hector (http://github.com/rantav/hector) API which
 makes it easy to connect to Cassandra without dealing with the thrift layer.
-Hector also provides for connection pooling, etc.
+Hector also provides for connection pooling, etc.  Hector has gone through
+a new API version, so this plugin has to as well.
 
 Goals:
 
@@ -41,63 +29,20 @@ and optionally hiding 'NotFound' exceptions. (The ruby Cassandra plugin
 returns an empty hash if a searched for value does not exist. Java plugin
 throws an exception.)
 
-INSTALLATION
 
-You can either install via the standard grails technique:
+UNDER DEVELOPMENT:
 
-   grails install-plugin cassandra
+The development for this plugin has re-started from scratch due to the
+extensive (and valuable) changes to Hector. New versions will be 
+labeled 0.7 going forward. No new plugin will be provided to the grails
+repository until its usable in production. Please review the unit test
+CassandraServiceTest to see the direction of the plugin going forward. If you
+are testing this yourself, you'll need Cassandra 0.7b2 running, and make sure
+you loaded the schema from the YAML file as shown in this post:
+http://wiki.apache.org/cassandra/FAQ#no_keyspaces
 
-or download the latest zip from github download section.
-
-USAGE
-
-Once the plugin is installed, grails will inject the Cassandra service
-into any controller or service that defines 'cassandraService' variable.
-
-By default, this plugin will connect to Cassandra running at localhost:9160
-using the keyspace 'Keyspace1' for all queries. To change this, setup in
-your grails-app/conf/spring/resources.groovy file:
-
-beans = {
-        cassandraService(codehead.CassandraService){
-            servers=["localhost:9160","192.168.2.1:9160"] as String[]
-            //servers=["localhost:9160"] // for just one server
-            defaultKeyspace="GeneralKeyspace"
-        }
-}
-
-The above configuration will allow for server fail-over to multiple Cassandra
-servers running, and default requests to the 'GeneralKeyspace' named Keyspace.
-
-
-EXAMPLES
-
-import java.util.Date
-class CassandraLookupController {
-    def cassandraService
-    def index = {
-        def now = new Date().toString()
-        def old_value = cassandraService.setColumnValue("Users","2","login_date",now)  //column family, key, col_name, value
-        def new_value = cassandraService.getColumnValue("Users","2","login_date")
-        // Example that uses a superColumnFamily
-        def old_scf_value = cassandraService.setColumnValue("Classes","chemistry","textbook","title","Quantum for Dummies") // column family, key, supercolumn, col_nam, value
-        def new_scf_value = cassandraService.getColumnValue("Classes","chemistry","textbook","title")
-
-        def str = "Login date was $old_value and now is $new_value"
-        render(str)
-    }
-}
-
-Note that you also have access to the Hector objects for connecting to
-Cassandra.  More test cases will be generated to show examples on how to do
-this. Until then, you can lookup how the service uses Hector in the code.
-
-
-TODO
-Some tasks in progress
-  - Add in ability to set timestamps
-  - Create CassandraHashMap
-  - Test cases, better instructions.
+Finally, note that you will have full access to Hector directly if you do not
+want the helper methods provided in the CassandraService layer.
 
 
 
