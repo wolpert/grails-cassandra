@@ -2,6 +2,7 @@ package codehead;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.TimeZone;
@@ -13,6 +14,7 @@ import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 
+import me.prettyprint.cassandra.serializers.BytesSerializer;
 import me.prettyprint.cassandra.serializers.SerializerTypeInferer;
 import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.Keyspace;
@@ -22,6 +24,51 @@ import me.prettyprint.hector.api.mutation.MutationResult;
 import me.prettyprint.hector.api.mutation.Mutator;
 import me.prettyprint.hector.api.query.ColumnQuery;
 import me.prettyprint.hector.api.query.QueryResult;
+
+class MutatorHandler {
+	
+	def keyspace
+	def serializer
+	def hMutator
+	
+	def MutatorHandler(keyspace, serializer){
+		this.keyspace = keyspace
+		this.serializer = serializer
+		this.hMutator = HFactory.createMutator(keyspace, serializer)
+	}
+	
+	def insertSuperColumn(key,cf,scName,map){
+		def list = []
+		def nameSerializer, valueSerializer 
+		map.each{k,v-> list << HFactory.createColumn(k,v,(nameSerializer=serializer(k)), (valueSerializer=serializer(v)))}
+		def superColumn = HFactory.createSuperColumn(scName,list,serializer(scName),nameSerializer, valueSerializer)
+		hMutator.insert(key,cf,superColumn)
+	}
+	// TODO: Test scName != null
+	def insert(key,cf,scName=null,name,value){
+		def col = HFactory.createColumn(name,value, serializer(name), serializer(value))
+		if(scName!=null){
+			col = HFactory.createSuperColumn(scName,Arrays.asList(col),serializer(scName), serializer(name), serializer(value))
+		}
+		hMutator.addInsertion(key, cf, col);
+	}
+	// TODO: Test scName != null
+	def delete(key,cf,scName=null,name){
+		if(scName==null){
+			hMutator.addDeletion(key, cf, name, serializer(name));
+		} else {
+			hMutator.subDelete(key, cf, scName, name,serializer(scName), serializer(name));
+		}
+	}
+	def serializer(object){
+		if(object==null){
+			object=byte[].class
+		}
+		return SerializerTypeInferer.getSerializer(object)
+	}
+
+
+}
 
 class CassandraService {
 	
@@ -106,6 +153,9 @@ class CassandraService {
 	 * @return
 	 */
 	def serializer(object){
+		if(object==null){
+			object=byte[].class
+		}
 		return SerializerTypeInferer.getSerializer(object)
 	}
 	
@@ -138,7 +188,20 @@ class CassandraService {
 		Mutator m = HFactory.createMutator(keyspace(),serializer(key));
 		MutationResult mr = m.insert(key, cf, HFactory.createColumn(name, value, serializer(name), serializer(value)));
 	}
-
+	
+	/**
+	 * Will provide a way to add inserts in a batch way... give it a closure and it will give you a 'pseudo-atomic' mutator.
+	 * @param cf
+	 * @param keyClass
+	 * @return
+	 */
+	def batchKeyUpdate(keyClass,block){
+		MutatorHandler mutatorHandler = new MutatorHandler(keyspace(), serializer(keyClass));
+		block.delegate = mutatorHandler
+		block()
+		mutatorHandler.hMutator.execute()
+	}
+	
 	/**
 	* Gets a single value for a key. Note that it uses the potential serializer derived from the data type.
 	*
@@ -150,9 +213,16 @@ class CassandraService {
 	* @return
 	*/
    def getValue(key,cf,scName=null,name,valueClass){
-		ColumnQuery q = HFactory.createColumnQuery(keyspace(), serializer(key), serializer(name), serializer(valueClass))
-		q.setName(name).setColumnFamily(cf)
-		QueryResult r = q.setKey(key).execute()
+		def q 
+		if (scName==null){
+			q = HFactory.createColumnQuery(keyspace(), serializer(key), serializer(name), serializer(valueClass))
+			q.setName(name)
+		} else {
+			q = HFactory.createSubColumnQuery(keyspace(), serializer(key), serializer(scName), serializer(name), serializer(valueClass))
+			q.setSuperColumn(scName).setColumn(name)
+		}
+		q.setColumnFamily(cf).setKey(key)
+		QueryResult r = q.execute()
 		HColumn c = r.get()
 		if(c==null){
 			return null
@@ -162,6 +232,32 @@ class CassandraService {
    }
    
    /**
+    * Returns a map of all values for the column and/or super column
+    * TODO: Test NOT having a super column
+    * @param key
+    * @param cf
+    * @param nameClass
+    * @param valueClass
+    * @return
+    */
+   def getValues(key,cf,scName=null,nameClass,valueClass){
+	   def q
+	   q = HFactory.createSuperColumnQuery(keyspace(), serializer(key), serializer(scName), serializer(nameClass), serializer(valueClass))
+	   q.setSuperName(scName).setColumnFamily(cf)
+	   q.setKey(key)
+	   
+	   def qr = q.execute()
+	   // deal with the super column
+	   def sc = qr.get()
+	   def map=[:]
+	   if(sc){
+		   sc.getColumns().each{map[it.getName()]=it.getValue()}
+	   }
+	   return map
+   }
+   
+   /**
+    * TODO: Test using a super column
     * Removes the column for the key's name from the (super) column family
     * @param key
     * @param cf
