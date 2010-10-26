@@ -272,8 +272,6 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 	}
 
 	
-		
-	//TODO: groovy this...
 	void testSubColumnQuery() {
 		String cf = "Super1";
 		
@@ -303,7 +301,24 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		deleteColumns(cleanup);
 	}
 	
-	//TODO: groovy this...
+	void testSubColumnQueryGroovy() {
+		String cf = "Super1";
+
+		TestCleanupDescriptor cleanup = insertSuperColumns(cf, 1, "testSubColumnQuery", 1,	"testSubColumnQuerySuperColumn");
+		
+		// get value
+		assertEquals("v000",cassandraService.getValue("testSubColumnQuery0",cf,"testSubColumnQuerySuperColumn0","c000",String.class))
+		
+		// get nonexisting value
+		assertNull(cassandraService.getValue("testSubColumnQuery0",cf,"testSubColumnQuerySuperColumn0","column doesn't exist",String.class))
+		
+		// remove value
+		deleteColumns(cleanup);
+
+		// validate removed finished		
+		assertNull(cassandraService.getValue("testSubColumnQuery0",cf,"testSubColumnQuerySuperColumn0","c000",String.class))
+	}
+
 	void testMultigetSliceQuery() {
 		String cf = "Standard1";
 		
@@ -359,8 +374,69 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		
 		deleteColumns(cleanup);
 	}
+
+	void testMultigetSliceQueryGroovy() {
+		String cf = "Standard1";
+		
+		TestCleanupDescriptor cleanup = insertColumns(cf, 4, "testMultigetSliceQuery", 4,
+				"testMultigetSliceQueryColumn");
+		
+		// get value
+		def result = cassandraService.getValuesSlice(["testMultigetSliceQuery1", "testMultigetSliceQuery2"],cf,["testMultigetSliceQueryColumn1", "testMultigetSliceQueryColumn2"],String.class)
+		assertEquals(2,result.size())
+		assertEquals(2,result["testMultigetSliceQuery1"].size())
+		assertEquals(2,result["testMultigetSliceQuery2"].size())
+		assertEquals("value11", result["testMultigetSliceQuery1"]["testMultigetSliceQueryColumn1"]);
+		assertEquals("value12", result["testMultigetSliceQuery1"]["testMultigetSliceQueryColumn2"]);
+		assertNull(result["testMultigetSliceQueryColumn3"]);
+
+		// now try with start/finish
+		result = cassandraService.getValuesSliceRange(["testMultigetSliceQuery3"],cf,"testMultigetSliceQueryColumn1", "testMultigetSliceQueryColumn3",String.class,false,100)
+		assertNotNull(result)
+		assertEquals(1,result.size())
+		result=result["testMultigetSliceQuery3"]
+		assertNotNull(result)
+		assertEquals(3,result.size())
+		assertEquals("value31",result["testMultigetSliceQueryColumn1"])
+		assertEquals("value32",result["testMultigetSliceQueryColumn2"])
+		assertEquals("value33",result["testMultigetSliceQueryColumn3"])
+		
+		deleteColumns(cleanup);
+	}
+
 	
-	//TODO: groovy this...
+		
+	void testSliceQueryGroovy() {
+		String cf = "Standard1";
+		
+		TestCleanupDescriptor cleanup = insertColumns(cf, 1, "testSliceQuery", 4, "testSliceQuery");
+		
+		// get value
+		def result = cassandraService.getValuesSlice("testSliceQuery0",cf,["testSliceQuery1", "testSliceQuery2", "testSliceQuery3"],String.class)
+		assertNotNull(result)
+		println("Result:" +result)
+		assertEquals(1,result.size())
+		result=result['testSliceQuery0']
+		assertNotNull(result)
+		assertEquals(3,result.size())
+		assertEquals("value01", result["testSliceQuery1"]);
+		assertEquals("value02", result["testSliceQuery2"]);
+		assertEquals("value03", result["testSliceQuery3"]);
+		
+		// now try with start/finish
+		// try reversed this time
+		result = cassandraService.getValuesSliceRange("testSliceQuery0",cf,"testSliceQuery2", "testSliceQuery1",String.class,true,100)
+		assertNotNull(result);
+		assertEquals(1,result.size())
+		result=result['testSliceQuery0']
+		assertNotNull(result)
+		assertEquals(2,result.size())
+		assertEquals("value01", result["testSliceQuery1"]);
+		assertEquals("value02", result["testSliceQuery2"]);
+		
+		deleteColumns(cleanup);
+	}
+
 	void testSliceQuery() {
 		String cf = "Standard1";
 		
@@ -406,7 +482,8 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		
 		deleteColumns(cleanup);
 	}
-	
+
+		
 	//TODO: groovy this...
 	void testSuperSliceQuery() {
 		String cf = "Super1";

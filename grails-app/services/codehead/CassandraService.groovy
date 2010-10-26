@@ -232,6 +232,72 @@ class CassandraService {
    }
    
    /**
+	* TODO: Test having a super column
+	* @param keys Array of keys, could be an array of one
+	* @param cf
+	* @param columnRangeStart
+	* @param columnRangeEnd
+	* @param valueClass
+	* @param reverse
+	* @param count
+	* @return
+	*/
+   def getValuesSliceRange(keys,cf,scName=null,columnRangeStart,columnRangeEnd,valueClass,reverse,count){
+	   if(!(keys instanceof ArrayList)){
+		   keys = [keys]
+	   }
+	   def q
+	   q = HFactory.createMultigetSliceQuery(keyspace(),serializer(keys[0]),serializer(columnRangeStart),serializer(valueClass));
+	   q.setColumnFamily(cf)
+	   q.setKeys(keys as Object[])
+	   q.setRange(columnRangeStart,columnRangeEnd,reverse,count)
+	   def qr = q.execute()
+	   def rows=qr.get()
+	   def result = [:]
+	   rows.each{row->
+		   def key=row.getKey()
+		   def cols=row.getColumnSlice().getColumns()
+		   def data=[:]
+		   cols.each{data[it.getName()]=it.getValue()}
+		   result[key]=data
+	   }
+	   return result
+   }
+   
+   /**
+    * TODO: Test having a super column
+    * @param keys Array of keys, could be an array of one
+    * @param cf
+    * @param columnNames array of names, could be an array of one
+    * @param valueClass
+    * @return
+    */
+   def getValuesSlice(keys,cf,scName=null,columnNames,valueClass){
+	   if(!(keys instanceof ArrayList)){
+		   keys = [keys]
+	   }
+	   if(columnNames==null || columnNames.size()==0){
+		   return [:]
+	   }
+	   def q
+	   q = HFactory.createMultigetSliceQuery(keyspace(),serializer(keys[0]),serializer(columnNames[0]),serializer(valueClass));
+	   q.setColumnFamily(cf)
+	   q.setKeys(keys as Object[])
+	   q.setColumnNames(columnNames as Object[])
+	   def qr = q.execute()
+	   def rows=qr.get()
+	   def result = [:]
+	   rows.each{row->
+		   def key=row.getKey()
+		   def cols=row.getColumnSlice().getColumns()
+		   def data=[:]
+		   cols.each{data[it.getName()]=it.getValue()}
+		   result[key]=data
+	   }
+	   return result
+   }
+   
+   /**
     * Returns a map of all values for the column and/or super column
     * TODO: Test NOT having a super column
     * @param key
