@@ -414,7 +414,6 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		// get value
 		def result = cassandraService.getValuesSlice("testSliceQuery0",cf,["testSliceQuery1", "testSliceQuery2", "testSliceQuery3"],String.class)
 		assertNotNull(result)
-		println("Result:" +result)
 		assertEquals(1,result.size())
 		result=result['testSliceQuery0']
 		assertNotNull(result)
@@ -693,9 +692,9 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		deleteColumns(cleanup);
 	}
 	
-	// TODO: FIX THIS
 	//TODO: groovy this...
-	void xxxxxxxtestRangeSlicesQuery() {
+	// If this fails... its because your not using opp
+	void testRangeSlicesQuery() {
 		String cf = "Standard1";
 		
 		TestCleanupDescriptor cleanup = insertColumns(cf, 4, "testRangeSlicesQuery", 3,
@@ -712,6 +711,7 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		assertNotNull(r);
 		OrderedRows<String, String, String> rows = r.get();
 		assertNotNull(rows);
+		println("rows.getList() " + rows.getList())
 		
 		assertEquals(3, rows.getCount());
 		Row<String, String, String> row = rows.getList().get(0);

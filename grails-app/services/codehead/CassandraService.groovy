@@ -37,6 +37,7 @@ class MutatorHandler {
 		this.hMutator = HFactory.createMutator(keyspace, serializer)
 	}
 	
+	// Note that this only works with a map.
 	def insertSuperColumn(key,cf,scName,map){
 		def list = []
 		def nameSerializer, valueSerializer 
@@ -56,7 +57,7 @@ class MutatorHandler {
 	def delete(key,cf,scName=null,name){
 		if(scName==null){
 			hMutator.addDeletion(key, cf, name, serializer(name));
-		} else {
+		} else { // must delete right away? No 'schedule'?
 			hMutator.subDelete(key, cf, scName, name,serializer(scName), serializer(name));
 		}
 	}
@@ -132,6 +133,7 @@ class CassandraService {
 	 * @return
 	 */
 	def columnFamilyDetails(keyspaceName=keyspace){
+		log.debug("[]")
 		if (null==keyspaceDetails[keyspaceName]) {
 			keyspaceDetails[keyspaceName] = getCluster().describeKeyspace(keyspaceName)
 		}
@@ -185,6 +187,7 @@ class CassandraService {
 	 * @return
 	 */
 	def setValue(key,cf,scName=null,name,value){
+		log.debug("[setValue($key,$cf,$scName,$name,$value)]")
 		Mutator m = HFactory.createMutator(keyspace(),serializer(key));
 		MutationResult mr = m.insert(key, cf, HFactory.createColumn(name, value, serializer(name), serializer(value)));
 	}
@@ -196,6 +199,7 @@ class CassandraService {
 	 * @return
 	 */
 	def batchKeyUpdate(keyClass,block){
+		log.debug("[batchKeyUpdate($keyClass)]")
 		MutatorHandler mutatorHandler = new MutatorHandler(keyspace(), serializer(keyClass));
 		block.delegate = mutatorHandler
 		block()
@@ -213,6 +217,7 @@ class CassandraService {
 	* @return
 	*/
    def getValue(key,cf,scName=null,name,valueClass){
+		log.debug("[getValue($key,$cf,$scName,$name,$valueClass)]")
 		def q 
 		if (scName==null){
 			q = HFactory.createColumnQuery(keyspace(), serializer(key), serializer(name), serializer(valueClass))
@@ -243,6 +248,7 @@ class CassandraService {
 	* @return
 	*/
    def getValuesSliceRange(keys,cf,scName=null,columnRangeStart,columnRangeEnd,valueClass,reverse,count){
+		log.debug("[getValuesSliceRange($keys,$cf,$scName,$columnRangeStart,$columnRangeEnd,$valueClass,$reverse,$count)]")
 	   if(!(keys instanceof ArrayList)){
 		   keys = [keys]
 	   }
@@ -273,6 +279,7 @@ class CassandraService {
     * @return
     */
    def getValuesSlice(keys,cf,scName=null,columnNames,valueClass){
+		log.debug("[getValuesSlice($keys,$cf,$scName,$columnNames,$valueClass)]")
 	   if(!(keys instanceof ArrayList)){
 		   keys = [keys]
 	   }
@@ -307,6 +314,7 @@ class CassandraService {
     * @return
     */
    def getValues(key,cf,scName=null,nameClass,valueClass){
+		log.debug("[getValues($key,$cf,$scName,$nameClass,$valueClass)]")
 	   def q
 	   q = HFactory.createSuperColumnQuery(keyspace(), serializer(key), serializer(scName), serializer(nameClass), serializer(valueClass))
 	   q.setSuperName(scName).setColumnFamily(cf)
@@ -332,6 +340,7 @@ class CassandraService {
     * @return
     */
    def deleteValue(key,cf,scName=null,name){
+		log.debug("[deleteValue($key,$cf,$scName,$name)]")
 	   Mutator m = HFactory.createMutator(keyspace(), serializer(key));
 	   MutationResult mr2 = m.delete(key, cf, name, serializer(name));
    }
