@@ -10,6 +10,12 @@ This is INCOMPATABLE with cassandra 0.6 or earlier. It will also be incompatiabl
 with earlier versions of this own plugin. You'll have to re-do the api calls
 when upgrading to this version of grails-cassandra. 
 
+If you are testing this, it assumes a stock Cassandra 0.7 server is running on
+your localhost. Test cases require that you invoked the JMX method 
+StorageService.loadSchemaFromYAML after channing the partitioner to
+org.apache.cassandra.dht.OrderPreservingPartitioner. This is due to the default
+assumptions made by the hector tests.
+
 
 ABOUT
 

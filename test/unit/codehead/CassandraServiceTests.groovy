@@ -752,9 +752,8 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		deleteColumns(cleanup);
 	}
 	
-	// TODO: FIX THIS
 	//TODO: groovy this...
-	void xxxxxxxxtestRangeSuperSlicesQuery() {
+	void testRangeSuperSlicesQuery() {
 		String cf = "Super1";
 		
 		TestCleanupDescriptor cleanup = insertSuperColumns(cf, 4, "testRangeSuperSlicesQuery", 3,
@@ -805,9 +804,8 @@ class CassandraServiceTests extends GrailsUnitTestCase {
 		deleteColumns(cleanup);
 	}
 	
-	//TODO FIX THIS
 	//TODO: groovy this...
-	void xxxxxxxtestRangeSubSlicesQuery() {
+	void testRangeSubSlicesQuery() {
 		String cf = "Super1";
 		
 		TestCleanupDescriptor cleanup = insertSuperColumns(cf, 4, "testRangeSubSlicesQuery", 3,
