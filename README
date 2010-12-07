@@ -4,6 +4,8 @@ Cassandra Version: 0.7.0
 Hector Version: 0.7.0-20
 Grails: 1.2.2 or higher
 
+(For cassandra version 0.6, please use version 0.5.4 of this plugin)
+
 
 NOTE:
 This is INCOMPATABLE with cassandra 0.6 or earlier. It will also be incompatiable

@@ -1,4 +1,4 @@
-<plugin name='cassandra' version='0.5.4' grailsVersion='1.2.2 &gt; *'>
+<plugin name='cassandra' version='0.7.0.20101207' grailsVersion='1.2.2 &gt; *'>
   <author>Ned Wolpert</author>
   <authorEmail>ned.wolpert@imemories.com</authorEmail>
   <title>Cassandra access</title>
