@@ -1,7 +1,7 @@
 http://www.opensource.org/licenses/apache2.0.php
 
 Cassandra Version: 0.7.0 
-Hector Version: 0.7.0-20
+Hector Version: 0.7.0-22
 Grails: 1.2.2 or higher
 
 (For cassandra version 0.6, please use version 0.5.4 of this plugin)
@@ -18,6 +18,17 @@ StorageService.loadSchemaFromYAML after channing the partitioner to
 org.apache.cassandra.dht.OrderPreservingPartitioner. This is due to the default
 assumptions made by the hector tests.
 
+INSTALLATION:
+grails install-plugin cassandra
+edit grails-app/conf/spring/resources.groovy:
+  beans = {
+      cassandraService(codehead.CassandraService){
+                  servers="localhost:9160"
+                  keyspaceName="Keyspace1"
+                  clusterName="Main"
+          hideNotFoundExceptions=true
+      }
+  }
 
 ABOUT
 
@@ -29,6 +40,11 @@ makes it easy to connect to Cassandra without dealing with the thrift layer.
 Hector also provides for connection pooling, etc.  Hector has gone through
 a new API version, so this plugin has to as well.
 
+You can use hector directly, or make use of the helper methods I added to
+take advantage of 'groovy-way' to do things. Look at
+https://github.com/wolpert/grails-cassandra/blob/master/test/unit/codehead/CassandraServiceTests.groovy
+for examples of using both.
+
 Goals:
 
 Primary goals of this project is to have a service that provides easy access
@@ -36,21 +52,6 @@ to Cassandra. This includes simplify lookup and setting of Cassandra values,
 and optionally hiding 'NotFound' exceptions. (The ruby Cassandra plugin 
 returns an empty hash if a searched for value does not exist. Java plugin
 throws an exception.)
-
-
-UNDER DEVELOPMENT:
-
-The development for this plugin has re-started from scratch due to the
-extensive (and valuable) changes to Hector. New versions will be 
-labeled 0.7 going forward. No new plugin will be provided to the grails
-repository until its usable in production. Please review the unit test
-CassandraServiceTest to see the direction of the plugin going forward. If you
-are testing this yourself, you'll need Cassandra 0.7b2 running, and make sure
-you loaded the schema from the YAML file as shown in this post:
-http://wiki.apache.org/cassandra/FAQ#no_keyspaces
-
-Finally, note that you will have full access to Hector directly if you do not
-want the helper methods provided in the CassandraService layer.
 
 
 
