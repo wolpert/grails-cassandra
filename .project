@@ -26,7 +26,7 @@
 		<link>
 			<name>tomcat-1.2.2-src-groovy</name>
 			<type>2</type>
-			<location>/home/wolpert/.grails/1.2.2/projects/cassandra/plugins/tomcat-1.2.2/src/groovy</location>
+			<locationURI>GRAILS_ROOT/1.2.2/projects/cassandra/plugins/tomcat-1.2.2/src/groovy</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

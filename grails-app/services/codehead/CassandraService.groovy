@@ -28,13 +28,13 @@ import me.prettyprint.hector.api.query.QueryResult;
 class MutatorHandler {
 	
 	def keyspace
-	def serializer
 	def hMutator
+	def keySerializer
 	
-	def MutatorHandler(keyspace, serializer){
+	def MutatorHandler(keyspace, keySerializer){
 		this.keyspace = keyspace
-		this.serializer = serializer
-		this.hMutator = HFactory.createMutator(keyspace, serializer)
+		this.keySerializer = keySerializer
+		this.hMutator = HFactory.createMutator(keyspace, keySerializer)
 	}
 	
 	// Note that this only works with a map.
