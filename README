@@ -1,3 +1,8 @@
+EOL NOTICE:
+This plugin is not being worked on anymore. Instead, I recommend using Hector
+as a dependency in your grails project, and use it directly. There is no
+advantage to this plugin anymore.
+
 http://www.opensource.org/licenses/apache2.0.php
 
 Cassandra Version: 0.7.0 
@@ -8,7 +13,7 @@ Grails: 1.2.2 or higher
 
 
 NOTE:
-This is INCOMPATABLE with cassandra 0.6 or earlier. It will also be incompatiable
+This is INCOMPATIBLE with cassandra 0.6 or earlier. It will also be incompatible
 with earlier versions of this own plugin. You'll have to re-do the api calls
 when upgrading to this version of grails-cassandra. 
 
